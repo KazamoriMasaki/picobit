@@ -79,8 +79,9 @@ include/arch: include/config/auto.conf
 	@rm -f include/arch
 	@ln -sf ../$(arch)/include/ include/arch
 
-CROSS  := $(call unquote,$(CONFIG_CROSS_COMPILER))
-CFLAGS := -Iinclude/ -DPICOBIT -Wall -Werror -Os
+CROSS    := $(call unquote,$(CONFIG_CROSS_COMPILER))
+CPPFLAGS := -Iinclude/ -DPICOBIT
+CFLAGS    = $(CPPFLAGS) -Wall -Werror -Os
 
 arch  = arch/$(call unquote,$(CONFIG_ARCH))
 obj-y = $(addprefix $(arch)/,$(arch-y)) \
@@ -96,15 +97,21 @@ include arch/Makefile
 prim-gen = gawk -f scripts/scanner.awk -f scripts/prim-$(1).awk \
 	.primitives.p >$(2)
 
-.primitives.p: include/arch $(obj-y)
+.primitives.p: include/arch $(obj-y) .config
 	rm -f $@
 	for object in $(obj-y); do \
-		$(CROSS)cpp -DNO_PRIMITIVE_EXPAND $(CFLAGS) \
+		$(CROSS)cpp -DNO_PRIMITIVE_EXPAND $(CPPFLAGS) \
 			$$object -o - >>$@; \
 	done
 	$(call prim-gen,headergen,include/gen.primitives.h)
 	$(call prim-gen,schemegen,../compiler/gen.primitives.rkt)
 	$(call prim-gen,dispatchgen,core/gen.dispatch.c)
+
+fetch-macro = $$(($$(echo "$(2)" | $(CROSS)cpp $(CPPFLAGS) \
+	--include include/$(1) | tail -n1)))
+
+provide-macro = @echo "(define $(1) $(call fetch-macro,$(2),$(3)))" >>$@; \
+	echo "(provide $(1))" >>$@
 
 .PHONY: ../compiler/gen.config.rkt
 ../compiler/gen.config.rkt:
@@ -112,8 +119,12 @@ prim-gen = gawk -f scripts/scanner.awk -f scripts/prim-$(1).awk \
 	@echo "" >>$@
 	@echo "(define code-start $(load-address))" >>$@
 	@echo "(provide code-start)" >>$@
+	$(call provide-macro,max-fixnum,heap.h,MAX_FIXNUM)
+	$(call provide-macro,min-rom-encoding,heap.h,MIN_ROM_ENCODING)
+	$(call provide-macro,max-rom-encoding,heap.h,MAX_ROM_ENCODING)
+	$(call provide-macro,min-ram-encoding,heap.h,MIN_RAM_ENCODING)
 
-../compiler/gen.library.scm: $(arch)/Makefile
+../compiler/gen.library.scm: .config $(arch)/Makefile
 	echo "(include \"compiler/library.scm\")" >$@
 	for scm in $(scm-y); do \
 		echo "(include \"vm/$${scm}\")" >>$@; \
@@ -121,6 +132,9 @@ prim-gen = gawk -f scripts/scanner.awk -f scripts/prim-$(1).awk \
 
 all: include/arch .primitives.p ../compiler/gen.config.rkt \
 	../compiler/gen.library.scm arch-all
+	if [ -e picobit.elf ]; then \
+		CROSS="$(CROSS)" CPPFLAGS="$(CPPFLAGS)" scripts/check-encoding.sh; \
+	fi
 
 endif # $(dot-config)
 

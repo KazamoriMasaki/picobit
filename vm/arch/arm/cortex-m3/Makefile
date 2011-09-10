@@ -1,9 +1,14 @@
 ifdef CONFIG_ARM_CPU_STM32F100RB
-ldscript := stm32f100rb.ld
+ldscript  := stm32f100rb.ld
+ram_bytes := 0x2000
+rom_bytes := 0x20000
 endif
 
 CFLAGS += -mcpu=cortex-m3 -mthumb -g -fno-hosted -nostdlib \
-          -L$(arch)/lib -T$(ldscript) -Wl,-warn-common
+	-L$(arch)/lib -T$(ldscript) -Wl,-warn-common
+
+CPPFLAGS += -DARCH_CPU_RAM_BYTES=$(ram_bytes) \
+	-DARCH_CPU_ROM_BYTES=$(rom_bytes)
 
 arch-y += init.s
 
