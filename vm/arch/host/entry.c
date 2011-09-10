@@ -192,7 +192,7 @@ int main (int argc, char *argv[])
 		} else {
 			interpreter ();
 
-#ifdef CONFIG_GC_DEBUG
+#ifdef CONFIG_GC_STATISTICS
 			printf ("**************** memory needed = %d\n", max_live + 1);
 #endif
 		}
