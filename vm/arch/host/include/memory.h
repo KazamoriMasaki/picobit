@@ -3,7 +3,7 @@
 
 #define CODE_START 0x8000
 
-#define ARCH_RAM_BYTES 0x8000
+#define ARCH_RAM_BYTES 0x2000
 #define ARCH_ROM_BYTES 0x8000
 
 extern uint8 ram_mem[];
