@@ -20,7 +20,13 @@ PRIMITIVE_UNSPEC(#%sleep, arch_sleep, 1)
 
 	for(a = 0; a < a1; a++) {
 		for(b = 0; b < 100; b++) {
+			#if defined(CONFIG_ARM_COMPILER_GCC)
 			__asm__ __volatile__("nop");
+			#endif
+
+			#if defined(CONFIG_ARM_COMPILER_KEIL)
+			__nop();
+			#endif
 		}
 	}
 

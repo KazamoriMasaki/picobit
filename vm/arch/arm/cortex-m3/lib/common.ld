@@ -8,13 +8,13 @@ SECTIONS {
 
 	.text : {
 		*(.text)
-		
+
 		. = ALIGN(4);
-		
+
 		*(.rodata)
-		
+
 		. = ALIGN(4);
-		
+
 		__text_end__ = .;
 	} > flash
 
@@ -28,6 +28,7 @@ SECTIONS {
 		__bss_begin__ = .;
 
 		*(.bss)
+		*(.data)
 		*(COMMON)
 
 		. = ALIGN(4);

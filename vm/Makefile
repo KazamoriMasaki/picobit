@@ -79,9 +79,10 @@ include/arch: include/config/auto.conf
 	@rm -f include/arch
 	@ln -sf ../$(arch)/include/ include/arch
 
-CROSS    := $(call unquote,$(CONFIG_CROSS_COMPILER))
-CPPFLAGS := -Iinclude/ -DPICOBIT
-CFLAGS    = $(CPPFLAGS) -Wall -Werror -Os
+CROSS    = $(call unquote,$(CONFIG_CROSS_COMPILER))
+CPPFLAGS = -Iinclude/ -DPICOBIT
+LDFLAGS  = -nostdlib -L$(arch)/lib
+CFLAGS   = $(CPPFLAGS)
 
 arch  = arch/$(call unquote,$(CONFIG_ARCH))
 obj-y = $(addprefix $(arch)/,$(arch-y)) \
@@ -93,6 +94,11 @@ arch-all:
 
 include core/Makefile
 include arch/Makefile
+
+ifeq ($(no-gcc),)
+CFLAGS  += -Wall -Werror -Os $(LDFLAGS)
+LDFLAGS += -Wl,-warn-common -fno-hosted
+endif
 
 prim-gen = gawk -f scripts/scanner.awk -f scripts/prim-$(1).awk \
 	.primitives.p >$(2)
@@ -144,7 +150,7 @@ endif # $(mixed-targets)
 clean: FORCE
 	rm -f include/arch picobit-vm picobit.elf picobit.hex \
 		.primitives.p ../compiler/gen.* include/gen.* \
-		core/gen.*
+		core/gen.* *.o
 
 mrproper: clean FORCE
 	make -C kconfig clean

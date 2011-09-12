@@ -334,6 +334,7 @@ void compact ()
 obj alloc_vec_cell (uint16 n, obj from)
 {
 	uint8 gc_done = 0;
+	obj o;
 
 #ifdef CONFIG_GC_DEBUG
 	gc ();
@@ -358,7 +359,7 @@ obj alloc_vec_cell (uint16 n, obj from)
 #endif
 	}
 
-	obj o = free_vec_pointer;
+	o = free_vec_pointer;
 
 	// advance the free pointer
 	free_vec_pointer += n;
