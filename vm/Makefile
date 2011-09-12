@@ -85,8 +85,8 @@ LDFLAGS  = -nostdlib -L$(arch)/lib
 CFLAGS   = $(CPPFLAGS)
 
 arch  = arch/$(call unquote,$(CONFIG_ARCH))
-obj-y = $(addprefix $(arch)/,$(arch-y)) \
-	  $(addprefix core/,$(core-y))
+obj-y = $(addprefix core/,$(core-y)) \
+	  $(addprefix $(arch)/,$(arch-y))
 scm-y = $(addprefix $(arch)/,$(stdlib-y))
 
 .PHONY: arch-all
@@ -131,7 +131,6 @@ provide-macro = @echo "(define $(1) $(call fetch-macro,$(2),$(3)))" >>$@; \
 	$(call provide-macro,min-ram-encoding,heap.h,MIN_RAM_ENCODING)
 
 ../compiler/gen.library.scm: .config $(arch)/Makefile
-	echo "(include \"compiler/library.scm\")" >$@
 	for scm in $(scm-y); do \
 		echo "(include \"vm/$${scm}\")" >>$@; \
 	done

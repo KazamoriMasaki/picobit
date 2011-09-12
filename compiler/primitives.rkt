@@ -2,7 +2,8 @@
 
 (require racket/mpair unstable/sequence)
 (require srfi/4)
-(require "env.rkt")
+(require "env.rkt"
+         "parser.rkt" "front-end.rkt") ; to build the eta-expansions
 
 ;-----------------------------------------------------------------------------
 
@@ -20,11 +21,28 @@
     [(define-primitive name nargs encoding #:unspecified-result)
      (define-primitive name nargs encoding #:uns-res? #t)]
     [(define-primitive name nargs encoding #:uns-res? uns?)
-     (let ([prim (make-var 'name #t '() '() '() #f
-                           (make-primitive nargs #f uns?))])
+     (let ([prim (make-var
+                  'name #t '() '() '() #f
+                  (make-primitive
+                   nargs #f
+                   ;; eta-expansion, for higher-order uses, created lazily, to
+                   ;; avoid parsing before all the primitives are defined
+                   (lambda ()
+                     (define res #f)
+                     (or res
+                         (begin (set! res (create-eta-expansion 'name nargs))
+                                res)))
+              uns?))])
        (set! global-env (mcons prim global-env))
        (set! primitive-encodings
              (dict-set primitive-encodings 'name encoding)))]))
+
+(define (create-eta-expansion name nargs)
+  (define params (build-list nargs (lambda (x) (gensym))))
+  (define node
+    (parse #f `(lambda ,params (,name ,@params)) global-env))
+  (adjust-unmutable-references! node)
+  node)
 
 (include "gen.primitives.rkt")
 
@@ -41,31 +59,31 @@
   (set-primitive-constant-folder! prim folder))
 
 (define folders
-  `((#%number?         . ,number?)
+  `((number?           . ,number?)
     (#%+               . ,+)
     (#%-               . ,-)
     (#%mul-non-neg     . ,*)
     (#%div-non-neg     . ,quotient)
     (#%rem-non-neg     . ,remainder)
-    (#%=               . ,=)
-    (#%<               . ,<)
-    (#%>               . ,>)
-    (#%pair?           . ,pair?)
-    (#%car             . ,car)
-    (#%cdr             . ,cdr)
-    (#%null?           . ,null?)
-    (#%eq?             . ,eq?)
-    (#%not             . ,not)
-    (#%symbol?         . ,symbol?)
-    (#%string?         . ,string?)
-    (#%string->list    . ,string->list)
-    (#%list->string    . ,list->string)
-    (#%u8vector-ref    . ,u8vector-ref)
-    (#%u8vector?       . ,u8vector?)
-    (#%u8vector-length . ,u8vector-length)
-    (#%boolean?        . ,boolean?)
-    (#%ior             . ,bitwise-ior)
-    (#%xor             . ,bitwise-xor)))
+    (=                 . ,=)
+    (<                 . ,<)
+    (>                 . ,>)
+    (pair?             . ,pair?)
+    (car               . ,car)
+    (cdr               . ,cdr)
+    (null?             . ,null?)
+    (eq?               . ,eq?)
+    (not               . ,not)
+    (symbol?           . ,symbol?)
+    (string?           . ,string?)
+    (string->list      . ,string->list)
+    (list->string      . ,list->string)
+    (u8vector-ref      . ,u8vector-ref)
+    (u8vector?         . ,u8vector?)
+    (u8vector-length   . ,u8vector-length)
+    (boolean?          . ,boolean?)
+    (bitwise-ior       . ,bitwise-ior)
+    (bitwise-xor       . ,bitwise-xor)))
 
 (for ([(name folder) (in-pairs folders)])
   (add-constant-folder name folder))
