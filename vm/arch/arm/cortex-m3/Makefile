@@ -22,7 +22,7 @@ ifdef CONFIG_ARM_COMPILER_GCC
 CFLAGS += -mcpu=cortex-m3 -mthumb -g  \
 
 picobit.elf: $(obj-y) .config
-	$(CROSS)cc $(CFLAGS) -o $@ $(obj-y)
+	$(CROSS)gcc $(CFLAGS) -o $@ $(obj-y)
 endif
 
 ifdef CONFIG_ARM_COMPILER_KEIL
@@ -38,7 +38,7 @@ picobit.o: $(keil-y) .config
 		--partial $(notdir $(patsubst %.c,%.o,$(keil-y)))
 
 init.o: $(arch)/init.s
-	$(CROSS)cc $(CFLAGS) -c -o $@ $^
+	$(CROSS)gcc $(CFLAGS) -c -o $@ $^
 
 picobit.elf: picobit.o init.o
 	$(CROSS)ld $(LDFLAGS) -o $@ init.o picobit.o
